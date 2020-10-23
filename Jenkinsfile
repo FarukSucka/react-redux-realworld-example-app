@@ -23,7 +23,7 @@ node (label: 'master'){
             }
         } catch (e) {
             slackSend message: "${MSG_PREFIX} - Build failed during `Build` stage",
-                color: "danger ",
+                color: "danger",
                 channel: "${SLACK_CHANNEL}",
                 teamDomain: "${env.SLACK_TEAM_DOMAIN}",
                 tokenCredentialId: "${env.TOKEN}"
