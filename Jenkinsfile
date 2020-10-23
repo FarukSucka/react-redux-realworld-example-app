@@ -18,7 +18,7 @@ node (label: 'master'){
         try {
             retry (2){
                 sh "npm install"
-                sh "npm build"
+                sh "npm run-script build"
               
             }
         } catch (e) {
@@ -35,7 +35,7 @@ node (label: 'master'){
         try {
             retry(2) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'faruk-aws', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                    sh "aws s3 sync --acl public-read --sse --delete . s3://faruk-staging.faruksuljic.com"
+                    sh "aws s3 sync --acl public-read --sse --delete build s3://faruk-staging.faruksuljic.com"
                     }
             slackSend message: "${MSG_PREFIX} - Deployed to S3",
                 color: "good",
