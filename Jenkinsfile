@@ -54,8 +54,6 @@ node (label: 'master'){
     stage('Invalidation') {
         try {
             retry(2) {
-                    sh "aws configure set aws_access_key_id ${_AWS_ACCESS_KEY_ID}"
-                    sh "aws configure set aws_secret_access_key ${_AWS_SECRET_ACCESS_KEY}"
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: '_AWS_ACCESS_KEY_ID', credentialsId: 'faruk-aws', secretKeyVariable: '_AWS_SECRET_ACCESS_KEY']]) {
                     sh "aws cloudfront create-invalidation --distribution-id E1547LZ7K7NC66 --paths '/*'"
                     }
