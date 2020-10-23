@@ -19,6 +19,7 @@ node (label: 'master'){
             retry (2){
                 sh "npm install"
                 sh "npm run-script build"
+                sh "npm run-script start"
             }
         } catch (e) {
             slackSend message: "${MSG_PREFIX} - Build failed during `Build` stage",
