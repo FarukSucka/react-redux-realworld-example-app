@@ -18,6 +18,7 @@ node (label: 'master'){
         try {
             retry (2){
                 sh "npm install"
+                sh "rm -rf dist"
                 sh "mkdir -p dist"
                 sh '/var/lib/jenkins/workspace/staging/build.sh --environment staging'
                 sh '/var/lib/jenkins/workspace/staging/build.sh --environment production'
@@ -51,7 +52,7 @@ node (label: 'master'){
         try {
             retry(2) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'faruk-aws', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                    sh "aws s3 sync --acl public-read --sse --delete build s3://faruk-staging.faruksuljic.com"
+                    sh "aws s3 sync --acl public-read --sse --delete dist/staging s3://faruk-staging.faruksuljic.com"
                     }
             slackSend message: "${MSG_PREFIX} - Deployed to S3",
                 color: "good",
