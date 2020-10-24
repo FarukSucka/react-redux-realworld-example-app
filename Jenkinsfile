@@ -18,6 +18,7 @@ node (label: 'master'){
         try {
             retry (2){
                 sh "npm install"
+                sh "mkdir -p dist"
                 sh '/var/lib/jenkins/workspace/staging/build.sh --environment staging'
                 sh '/var/lib/jenkins/workspace/staging/build.sh --environment production'
                 sh 'tar -zcvf dist.tar.gz ./dist/'
