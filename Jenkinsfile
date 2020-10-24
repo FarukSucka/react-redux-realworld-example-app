@@ -18,7 +18,10 @@ node (label: 'master'){
         try {
             retry (2){
                 sh "npm install"
-                sh "npm run-script build"
+                sh 'build.sh --environment staging'
+                sh 'build.sh --environment production'
+                sh 'tar -zcvf dist.tar.gz ./dist/'
+                // tar -zxvf dist.tar.gz
             }
         } catch (e) {
             slackSend message: "${MSG_PREFIX} - Build failed during `Build` stage",
@@ -27,6 +30,19 @@ node (label: 'master'){
                 teamDomain: "${env.SLACK_TEAM_DOMAIN}",
                 tokenCredentialId: "${env.TOKEN}"
             throw(e)
+        }
+    }
+
+    stage('Upload artifact') {
+        retry(2) {
+            withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'faruk-aws', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                sh "aws s3 sync --acl public-read --sse --delete dist.tar.gz s3://faruk-artifacts"
+            }
+        slackSend message: "${MSG_PREFIX} - Uploaded artifact to S3",
+            color: "good",
+            channel: "${SLACK_CHANNEL}",
+            teamDomain: "${env.SLACK_TEAM_DOMAIN}",
+            tokenCredentialId: "${env.TOKEN}"
         }
     }
 
