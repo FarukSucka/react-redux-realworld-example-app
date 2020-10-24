@@ -22,7 +22,7 @@ node (label: 'master'){
                 sh "mkdir -p dist"
                 sh '/var/lib/jenkins/workspace/staging/build.sh --environment staging'
                 sh '/var/lib/jenkins/workspace/staging/build.sh --environment production'
-                sh "tar -zcvf ${MSG_PREFIX}.tar.gz ./dist/"
+                sh 'tar -zcvf dist.tar.gz ./dist/'
                 // tar -zxvf dist.tar.gz
             }
         } catch (e) {
@@ -38,7 +38,7 @@ node (label: 'master'){
     stage('Upload artifact') {
         retry(2) {
             withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'faruk-aws', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                sh "aws s3 cp ${MSG_PREFIX}.tar.gz s3://faruk-artifacts/${MSG_PREFIX}.tar.gz"
+                sh "aws s3 cp dist.tar.gz s3://faruk-artifacts/dist.tar.gz"
             }
         slackSend message: "${MSG_PREFIX} - Uploaded artifact to S3",
             color: "good",
@@ -52,7 +52,7 @@ node (label: 'master'){
         try {
             retry(2) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'faruk-aws', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                    sh "aws s3 sync --acl public-read --sse --delete ${MSG_PREFIX}/staging s3://faruk-staging.faruksuljic.com"
+                    sh "aws s3 sync --acl public-read --sse --delete dist/staging s3://faruk-staging.faruksuljic.com"
                     }
             slackSend message: "${MSG_PREFIX} - Deployed to S3",
                 color: "good",
