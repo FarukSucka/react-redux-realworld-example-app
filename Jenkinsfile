@@ -37,7 +37,7 @@ node (label: 'master'){
     stage('Upload artifact') {
         retry(2) {
             withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'faruk-aws', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                sh "aws s3 cp --acl public-read --sse dist.tar.gz s3://faruk-artifacts/dist.tar.gz"
+                sh "aws s3 cp dist.tar.gz s3://faruk-artifacts/dist.tar.gz"
             }
         slackSend message: "${MSG_PREFIX} - Uploaded artifact to S3",
             color: "good",
