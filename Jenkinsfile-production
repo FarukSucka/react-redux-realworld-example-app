@@ -15,6 +15,7 @@ node (label: 'master'){
     }
 
     stage('Get artifact') {
+    try {
         retry(2) {
             withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'faruk-aws', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                 sh "aws s3 get-object --bucket text-content --key dist.tar.gz s3://faruk-artifacts/dist.tar.gz"
@@ -33,8 +34,8 @@ node (label: 'master'){
             teamDomain: "${env.SLACK_TEAM_DOMAIN}",
             tokenCredentialId: "${env.TOKEN}"
         throw(e)
+            }
         }
-
     } 
 
     stage('Deploy') {
