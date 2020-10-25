@@ -7,38 +7,18 @@ node (label: 'master'){
     env.CONSOLEURL = "`${env.BUILD_URL}console`"
 
     stage ('Properties') {
-        properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '2', numToKeepStr: '10')), disableConcurrentBuilds(), pipelineTriggers([githubPush()])])    
+        properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '2', numToKeepStr: '10')), disableConcurrentBuilds()])    
         }
 
     stage('Clone repository') {
         checkout scm
     }
 
-    nodejs('faruksuljic') {
-        try {
-            retry (2){
-                sh "npm install"
-                sh "rm -rf dist"
-                sh "mkdir -p dist"
-                sh '/var/lib/jenkins/workspace/staging/build.sh --environment staging'
-                sh '/var/lib/jenkins/workspace/staging/build.sh --environment production'
-                sh "tar -zcvf ${MSG_PREFIX}.tar.gz ./dist/"
-                // tar -zxvf dist.tar.gz
-            }
-        } catch (e) {
-            slackSend message: "${MSG_PREFIX} - Build failed during `Build` stage",
-                color: "danger ",
-                channel: "${SLACK_CHANNEL}",
-                teamDomain: "${env.SLACK_TEAM_DOMAIN}",
-                tokenCredentialId: "${env.TOKEN}"
-            throw(e)
-        }
-    }
-
-    stage('Upload artifact') {
+    stage('Get artifact') {
         retry(2) {
             withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'faruk-aws', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                sh "aws s3 cp ${MSG_PREFIX}.tar.gz s3://faruk-artifacts/${MSG_PREFIX}.tar.gz"
+                sh "aws s3 get-object --bucket text-content --key dist.tar.gz s3://faruk-artifacts/dist.tar.gz"
+                sh "tar -zxvf dist.tar.gz"
             }
         slackSend message: "${MSG_PREFIX} - Uploaded artifact to S3",
             color: "good",
@@ -46,13 +26,21 @@ node (label: 'master'){
             teamDomain: "${env.SLACK_TEAM_DOMAIN}",
             tokenCredentialId: "${env.TOKEN}"
         }
+    } catch (e) {
+        slackSend message: "${MSG_PREFIX} - Build failed during `Deploy` stage",
+            color: "danger",
+            channel: "${SLACK_CHANNEL}",
+            teamDomain: "${env.SLACK_TEAM_DOMAIN}",
+            tokenCredentialId: "${env.TOKEN}"
+        throw(e)
+        }
     }
 
     stage('Deploy') {
         try {
             retry(2) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'faruk-aws', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                    sh "aws s3 sync --acl public-read --sse --delete ${MSG_PREFIX}/staging s3://faruk-staging.faruksuljic.com"
+                    sh "aws s3 sync --acl public-read --sse --delete dist/production s3://faruk-production.faruksuljic.com"
                     }
             slackSend message: "${MSG_PREFIX} - Deployed to S3",
                 color: "good",
@@ -73,7 +61,7 @@ node (label: 'master'){
         try {
             retry(2) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'faruk-aws', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                    sh "aws cloudfront create-invalidation --distribution-id E1547LZ7K7NC66 --paths '/*'"
+                    sh "aws cloudfront create-invalidation --distribution-id E2LJPBT1VGHVG5 --paths '/*'"
                     }
             slackSend message: "${MSG_PREFIX} - CloudFront Invalidated",
                 color: "good",
