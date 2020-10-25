@@ -26,7 +26,7 @@ node (label: 'master'){
             teamDomain: "${env.SLACK_TEAM_DOMAIN}",
             tokenCredentialId: "${env.TOKEN}"
         }
-    } catch (e) {
+        catch (e) {
         slackSend message: "${MSG_PREFIX} - Build failed during `Deploy` stage",
             color: "danger",
             channel: "${SLACK_CHANNEL}",
@@ -34,7 +34,8 @@ node (label: 'master'){
             tokenCredentialId: "${env.TOKEN}"
         throw(e)
         }
-    }
+
+    } 
 
     stage('Deploy') {
         try {
