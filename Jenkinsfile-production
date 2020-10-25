@@ -18,7 +18,7 @@ node (label: 'master'){
     try {
         retry(2) {
             withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'faruk-aws', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                sh "aws s3 get-object --bucket faruk-artifacts --key dir/dist.tar.gz dist.tar.gz"
+                sh "aws s3api get-object --bucket faruk-artifacts --key dir/dist.tar.gz dist.tar.gz"
                 sh "tar -zxvf dist.tar.gz"
             }
         slackSend message: "${MSG_PREFIX} - Got artifact from S3",
@@ -29,7 +29,7 @@ node (label: 'master'){
         }
     }
         catch (e) {
-        slackSend message: "${MSG_PREFIX} - Build failed during `Deploy` stage",
+        slackSend message: "${MSG_PREFIX} - Build failed during `Get artifact` stage",
             color: "danger",
             channel: "${SLACK_CHANNEL}",
             teamDomain: "${env.SLACK_TEAM_DOMAIN}",
