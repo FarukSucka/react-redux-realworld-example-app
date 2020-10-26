@@ -22,9 +22,10 @@ node (label: 'master'){
                 sh "mkdir -p dist"
                 sh '/var/lib/jenkins/workspace/staging/build.sh --environment staging'
                 sh '/var/lib/jenkins/workspace/staging/build.sh --environment production'
-                sh "tar -zcvf ${MSG_PREFIX}.tar.gz ./dist/"
+                sh "tar -zcvf ${env.JOB_NAME}-${env.BUILD_NUMBER}.tar.gz ./dist/"
                 // tar -zxvf dist.tar.gz
                 // aws s3api get-object --bucket text-content --key dir/my_images.tar.bz2 my_images.tar.bz2
+                
             }
         } catch (e) {
             slackSend message: "${MSG_PREFIX} - Build failed during `Build` stage",
@@ -39,7 +40,7 @@ node (label: 'master'){
     stage('Upload artifact') {
         retry(2) {
             withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'faruk-aws', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                sh "aws s3 cp ${MSG_PREFIX}.tar.gz s3://faruk-artifacts/${MSG_PREFIX}.tar.gz"
+                sh "aws s3 cp ${env.JOB_NAME}-${env.BUILD_NUMBER}.tar.gz s3://faruk-artifacts/${env.JOB_NAME}-${env.BUILD_NUMBER}.tar.gz"
             }
         slackSend message: "${MSG_PREFIX} - Uploaded artifact to S3",
             color: "good",
