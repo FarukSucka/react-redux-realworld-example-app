@@ -67,7 +67,7 @@ node (label: 'master'){
     stage('Build image') {
         try {
             retry(2) {
-                sh "docker build --target development -t $GCR/$PROJECT_ID/$CONTAINER:$BUILD_NUMBER ."
+                sh "docker build --target staging -t $GCR/$PROJECT_ID/$CONTAINER:$BUILD_NUMBER ."
             slackSend message: "${MSG_PREFIX} - Image Built",
                 color: "good",
                 channel: "${SLACK_CHANNEL}",
