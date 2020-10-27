@@ -5,7 +5,7 @@ node (label: 'master'){
     env.CONSOLEURL = "`${env.BUILD_URL}console`"
     env.GCR = "eu.gcr.io"
     env.PROJECT_ID = "ace-charter-293113"
-    env.REGISTRY_CREDENTIALS_ID = "faruk" 
+    env.REGISTRY_CREDENTIALS_ID = "faruksuljic" 
     env.REGISTRY_URL = "https://eu.gcr.io"
     env.SERVICE = "web"
     env.TOKEN = "faruk-slack" 
