@@ -107,15 +107,15 @@ node (label: 'master'){
     }
     
     stage ('Set k8s context'){
-        configFileProvider([configFile(fileId: "faruk-cluster", targetLocation: "faruk.config")]) {
-        sh 'KUBECONFIG=faruk.config kubectl config current-context'
+        configFileProvider([configFile(fileId: "faruk-cluster", targetLocation: "sucka.config")]) {
+        sh 'KUBECONFIG=sucka.config kubectl config current-context'
         }
     }
     
     stage ('Deploy service'){
         try {
             retry (2) {
-                sh "KUBECONFIG=faruk.config kubectl set image deployment/$SERVICE $SERVICE=$GCR/$PROJECT_ID/$CONTAINER:$BUILD_NUMBER"
+                sh "KUBECONFIG=sucka.config kubectl set image deployment/$SERVICE $SERVICE=$GCR/$PROJECT_ID/$CONTAINER:$BUILD_NUMBER"
             slackSend message: "${MSG_PREFIX} - Image Deployed",
                 color: "good",
                 channel: "${SLACK_CHANNEL}",
