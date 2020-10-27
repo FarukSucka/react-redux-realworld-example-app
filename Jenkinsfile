@@ -20,8 +20,10 @@ node (label: 'master'){
                 sh "npm install"
                 sh "rm -rf dist"
                 sh "mkdir -p dist"
-                sh '/var/lib/jenkins/workspace/staging/build.sh --environment staging'
-                sh '/var/lib/jenkins/workspace/staging/build.sh --environment production'
+                sh "REACT_APP_API_ROOT=https://faruk-staging.faruksuljic.com npm run-script build && mv build dist/staging"
+                sh "REACT_APP_API_ROOT=https://faruk-production.faruksuljic.com npm run-script build && mv build dist/production"
+                //sh '/var/lib/jenkins/workspace/staging/build.sh --environment staging'
+                //sh '/var/lib/jenkins/workspace/staging/build.sh --environment production'
                 sh "tar -zcvf ${env.JOB_NAME}-${env.BUILD_NUMBER}.tar.gz ./dist/"
             }
         } catch (e) {
