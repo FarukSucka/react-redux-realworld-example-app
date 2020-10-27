@@ -18,7 +18,7 @@ node (label: 'master'){
     try {
         retry(2) {
             withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'faruk-aws', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                sh "aws s3api get-object --bucket faruk-artifacts --key dist.tar.gz dist.tar.gz"
+                sh "aws s3 cp get-object --bucket faruk-artifacts --key dist.tar.gz dist.tar.gz"
                 sh "tar -zxvf dist.tar.gz"
             }
         slackSend message: "${MSG_PREFIX} - Got artifact from S3",
