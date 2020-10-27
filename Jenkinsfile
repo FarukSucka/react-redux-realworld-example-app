@@ -23,9 +23,6 @@ node (label: 'master'){
                 sh '/var/lib/jenkins/workspace/staging/build.sh --environment staging'
                 sh '/var/lib/jenkins/workspace/staging/build.sh --environment production'
                 sh "tar -zcvf ${env.JOB_NAME}-${env.BUILD_NUMBER}.tar.gz ./dist/"
-                // tar -zxvf dist.tar.gz
-                // aws s3api get-object --bucket text-content --key dir/my_images.tar.bz2 my_images.tar.bz2
-                
             }
         } catch (e) {
             slackSend message: "${MSG_PREFIX} - Build failed during `Build` stage",
