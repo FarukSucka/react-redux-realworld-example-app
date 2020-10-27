@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 25%
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+      - name: web
+        image: eu.gcr.io/ace-charter-293113/web@sha256:c4f42234b2713b735a6b959c475879f174f5663423bd693a5183cca557fecfc7
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 80
