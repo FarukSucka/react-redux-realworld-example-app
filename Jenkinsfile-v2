@@ -1,0 +1,134 @@
+node (label: 'master'){
+    def app
+    env.CONTAINER = "web" 
+    env.MSG_PREFIX = "*${env.JOB_NAME}*"
+    env.CONSOLEURL = "`${env.BUILD_URL}console`"
+    env.GCR = "eu.gcr.io"
+    env.PROJECT_ID = "ace-charter-293113"
+    env.REGISTRY_CREDENTIALS_ID = "faruk" 
+    env.REGISTRY_URL = "https://eu.gcr.io"
+    env.SERVICE = "web"
+    env.TOKEN = "faruk-slack" 
+    env.SLACK_TEAM_DOMAIN = "mopdevs" 
+    env.SLACK_CHANNEL = "taskbuilds"  
+    env.MSG_PREFIX = "*${env.JOB_NAME}-${env.BUILD_NUMBER}*"
+    env.CONSOLEURL = "`${env.BUILD_URL}console`"
+
+    stage ('Properties') {
+        properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '2', numToKeepStr: '10')), disableConcurrentBuilds(), pipelineTriggers([githubPush()])])    
+        }
+    stage('Clone repository') {
+        checkout scm
+    }
+
+    stage ('Starting pipeline'){
+            slackSend message: "${MSG_PREFIX}: Pipeline starting... \n Follow log at: ${env.CONSOLEURL}",
+                color: "good",
+                channel: "${SLACK_CHANNEL}",
+                teamDomain: "${env.SLACK_TEAM_DOMAIN}",
+                tokenCredentialId: "${env.TOKEN}"
+    }
+
+    stage ('Changes'){
+            env.FULL_LOG = sh(returnStdout: true, script: "git log '--pretty=format:%s - %an' -n1")
+            env.SOURCE_VERSION = sh(returnStdout: true, script:"git rev-parse --short HEAD | tr -d '\n'")
+            slackSend message: "${MSG_PREFIX} - *VERSION*: ${SOURCE_VERSION} - *CHANGES*: \n${FULL_LOG}",
+                color: "good",
+                channel: "${SLACK_CHANNEL}",
+                teamDomain: "${env.SLACK_TEAM_DOMAIN}",
+                tokenCredentialId: "${env.TOKEN}"
+    }
+
+    stage ('Build code'){
+      try {
+        nodejs("faruksuljic") {
+                sh "npm install"
+                sh "rm -rf dist"
+                sh "mkdir -p dist"
+                sh "REACT_APP_API_ROOT=https://faruk-staging.faruksuljic.com npm run-script build && mv build dist/staging"
+                sh "REACT_APP_API_ROOT=https://faruk-production.faruksuljic.com npm run-script build && mv build dist/production"
+        }        
+        slackSend message: "${MSG_PREFIX} - Code Built",
+            color: "good",
+            channel: "${SLACK_CHANNEL}",
+            teamDomain: "${env.SLACK_TEAM_DOMAIN}",
+            tokenCredentialId: "${env.TOKEN}"
+            
+        } catch (e) {
+            slackSend message: "${MSG_PREFIX} - Build failed during `Code image` stage",
+                color: "danger",
+                channel: "${SLACK_CHANNEL}",
+                teamDomain: "${env.SLACK_TEAM_DOMAIN}",
+                tokenCredentialId: "${env.TOKEN}"
+            throw(e)
+        }
+    }
+
+    stage('Build image') {
+        try {
+            retry(2) {
+                sh "docker build --target development -t $GCR/$PROJECT_ID/$CONTAINER:$BUILD_NUMBER ."
+            slackSend message: "${MSG_PREFIX} - Image Built",
+                color: "good",
+                channel: "${SLACK_CHANNEL}",
+                teamDomain: "${env.SLACK_TEAM_DOMAIN}",
+                tokenCredentialId: "${env.TOKEN}"
+            }
+        } catch (e) {
+            slackSend message: "${MSG_PREFIX} - Build failed during `Build image` stage",
+                color: "danger",
+                channel: "${SLACK_CHANNEL}",
+                teamDomain: "${env.SLACK_TEAM_DOMAIN}",
+                tokenCredentialId: "${env.TOKEN}"
+            throw(e)
+        }
+    }
+
+    stage('Push image') {
+        try {
+            retry(2) {
+                withDockerRegistry(credentialsId: 'gcr:faruk', url: 'https://eu.gcr.io') {
+                    sh "docker push $GCR/$PROJECT_ID/$CONTAINER"
+            slackSend message: "${MSG_PREFIX} - Image pushed to Google GCR",
+                color: "good",
+                channel: "${SLACK_CHANNEL}",
+                teamDomain: "${env.SLACK_TEAM_DOMAIN}",
+                tokenCredentialId: "${env.TOKEN}"
+                }
+            }
+        } catch (e) {
+            slackSend message: "${MSG_PREFIX} - Build failed during `Push image` stage",
+                color: "danger",
+                channel: "${SLACK_CHANNEL}",
+                teamDomain: "${env.SLACK_TEAM_DOMAIN}",
+                tokenCredentialId: "${env.TOKEN}"
+            throw(e)
+        }
+    }
+    
+    stage ('Set k8s context'){
+        configFileProvider([configFile(fileId: "faruk-cluster", targetLocation: "faruk.config")]) {
+        sh 'KUBECONFIG=faruk.config kubectl config current-context'
+        }
+    }
+    
+    stage ('Deploy service'){
+        try {
+            retry (2) {
+                sh "KUBECONFIG=faruk.config kubectl set image deployment/$SERVICE $SERVICE=$GCR/$PROJECT_ID/$CONTAINER:$BUILD_NUMBER"
+            slackSend message: "${MSG_PREFIX} - Image Deployed",
+                color: "good",
+                channel: "${SLACK_CHANNEL}",
+                teamDomain: "${env.SLACK_TEAM_DOMAIN}",
+                tokenCredentialId: "${env.TOKEN}"
+            }
+        } catch(e) {
+            slackSend message: "${MSG_PREFIX} - Build failed during `Deploy service` stage",
+                color: "danger",
+                channel: "${SLACK_CHANNEL}",
+                teamDomain: "${env.SLACK_TEAM_DOMAIN}",
+                tokenCredentialId: "${env.TOKEN}"
+            throw(e)
+            }
+    }
+}
